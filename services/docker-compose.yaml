@@ -67,7 +67,7 @@ services:
     restart: always
     volumes:
       - kc-realm-files:/opt/keycloak/data/import/
-      # - ./etc/keycloak-local.json:/opt/keycloak/data/import/keycloak-local.json
+      - ./etc/keycloak-local.json:/opt/keycloak/data/import/keycloak-local.json
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
