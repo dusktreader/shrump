@@ -1,12 +1,16 @@
-version: '3.9'
 services:
   pin-writer-api:
     build:
       context: ./pin-writer
       dockerfile: Dockerfile-dev
-    volumes:
-      - ./pin-writer/api/:/app/api/
-      - ./pin-writer/dev_tools/:/app/dev_tools/
+    develop:
+      watch:
+        - action: sync
+          path: ./app/api
+          target: /app/api
+        - action: sync
+          path: ./app/dev-tools
+          target: /app/dev-tools
     environment:
       - ARMASEC_DOMAIN=keycloak.local:8080/realms/master
       - ARMASEC_AUDIENCE=https://shrump.dusktreader.dev
@@ -34,9 +38,14 @@ services:
     build:
       context: ./pin-reader
       dockerfile: Dockerfile-dev
-    volumes:
-      - ./pin-reader/api/:/app/api/
-      - ./pin-reader/dev_tools/:/app/dev_tools/
+    develop:
+      watch:
+        - action: sync
+          path: ./app/api
+          target: /app/api
+        - action: sync
+          path: ./app/dev-tools
+          target: /app/dev-tools
     environment:
       - ARMASEC_DOMAIN=keycloak.local:8080/realms/master
       - ARMASEC_AUDIENCE=https://shrump.dusktreader.dev
@@ -55,6 +64,8 @@ services:
     depends_on:
       keycloak.local:
         condition: service_healthy
+      reader-db:
+        condition: service_healthy
       nats1:
         condition: service_healthy
       nats2:
@@ -69,8 +80,8 @@ services:
       - kc-realm-files:/opt/keycloak/data/import/
       - ./etc/keycloak-local.json:/opt/keycloak/data/import/keycloak-local.json
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
       - KC_HEALTH_ENABLED=true
       - KC_DB=postgres
       - KC_DB_URL=jdbc:postgresql://keycloak-db:5432/keycloak
@@ -118,7 +129,11 @@ services:
     - MONGO_INITDB_ROOT_USERNAME=admin
     - MONGO_INITDB_ROOT_PASSWORD=admin
     - MONGO_INITDB_DATABASE=pins
-
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      retries: 10
+      timeout: 5s
 
   nats1:
     image: docker.io/nats:2.10-alpine

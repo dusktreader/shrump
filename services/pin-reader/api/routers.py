@@ -20,6 +20,9 @@ query_router = APIRouter(prefix="/queries", tags=["Pin query API"])
     dependencies=[Depends(guard.lockdown(Permissions.READ_PINS))],
 )
 async def fetch_one_pin_route(pin_id: UUID4) -> Pin:
+    """
+    Fetch a single pin by id
+    """
     pin: Pin = await fetch_one_pin(pin_id)
     return pin
 
