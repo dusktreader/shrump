@@ -56,7 +56,7 @@ async def test_query_pin_get_many(client, mocker, inject_security_header):
         ],
     )
     test_page = Page(
-        pins=test_pins,
+        items=test_pins,
         page_size=DEFAULT_PAGE_SIZE,
         page_number=0,
     )

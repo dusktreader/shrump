@@ -5,7 +5,8 @@ RUN apt update && apt install -y curl libpq-dev gcc make
 RUN pip install poetry==1.5.1
 RUN poetry config virtualenvs.create false
 
-COPY ./pyproject.toml ./poetry.lock* ./README* ./LICENSE* ./dev_tools/ /app/
+COPY ./pyproject.toml ./poetry.lock* ./README* ./LICENSE* /app/
+COPY ./dev_tools/ /app/dev_tools
 WORKDIR /app
 RUN poetry install --no-root
 

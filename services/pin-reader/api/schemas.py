@@ -54,7 +54,6 @@ PinLot = RootModel[list[Pin]]
 
 
 class PinQueryParams(BaseModel):
-    owner_id: Optional[str] = None
     created_after: Optional[DateTime] = None
     created_before: Optional[DateTime] = None
     updated_after: Optional[DateTime] = None
@@ -71,6 +70,6 @@ class FlatParams(PinQueryParams, PaginationParams):
 
 
 class Page(BaseModel):
-    pins: PinLot
+    items: PinLot
     page_size: int
     page_number: int

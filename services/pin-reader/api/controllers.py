@@ -6,14 +6,15 @@ from api.storage import get_pin_collection, paginate
 from api.schemas import PinQueryParams, PaginationParams, Page
 
 
-async def fetch_one_pin(pin_id: UUID4) -> Pin:
+async def fetch_one_pin(owner_id: str, pin_id: UUID4) -> Pin:
     pin_collection = get_pin_collection()
-    pin_data = await pin_collection.find_one(dict(_id=pin_id))
+    pin_data = await pin_collection.find_one(dict(_id=pin_id, owner_id=owner_id))
     pin: Pin = Pin.model_validate(pin_data)
     return pin
 
 
 async def fetch_many_pins(
+    owner_id: str,
     pin_params: PinQueryParams,
     page_params: PaginationParams,
 ) -> Page:
@@ -22,8 +23,7 @@ async def fetch_many_pins(
 
     logger.debug(f"Searching for pins matching {pin_params=}")
 
-    if "owner_id" in pin_params.model_fields_set:
-        query_dict["owner_id"] = pin_params.owner_id
+    query_dict["owner_id"] = owner_id
 
     if "created_after" in pin_params.model_fields_set:
         moment_subquery = query_dict.setdefault("moment_created", {})

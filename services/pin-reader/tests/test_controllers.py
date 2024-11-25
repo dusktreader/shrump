@@ -19,7 +19,7 @@ async def test_fetch_one_pin(mocker):
         moment_created=pendulum.parse("2024-11-02 10:05:00"),
         moment_last_updated=pendulum.parse("2024-11-02 10:10:00"),
     ))
-    pin = await fetch_one_pin(pin_id)
+    pin = await fetch_one_pin("The Dude", pin_id)
     assert pin == Pin(
         _id=pin_id,
         owner_id="The Dude",
@@ -30,3 +30,7 @@ async def test_fetch_one_pin(mocker):
         moment_created="2024-11-02 10:05:00",
         moment_last_updated="2024-11-02 10:10:00",
     )
+
+
+# Dude, where's the test for fetch many?
+# Also tests for filtering by owner_id

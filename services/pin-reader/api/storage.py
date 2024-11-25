@@ -18,7 +18,7 @@ def get_pin_collection() -> motor.motor_asyncio.AsyncIOMotorCollection:
 async def paginate(results: motor.motor_asyncio.AsyncIOMotorCursor, params: PaginationParams) -> Page:
     pin_data = await results.skip(params.page_size * params.page_number).limit(params.page_size).to_list()
     return Page(
-        pins=PinLot.model_validate(pin_data),
+        items=PinLot.model_validate(pin_data),
         page_size=params.page_size,
         page_number=params.page_number,
     )

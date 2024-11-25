@@ -1,3 +1,5 @@
+name: shrump-compose
+
 services:
   pin-writer-api:
     build:
@@ -12,7 +14,7 @@ services:
           path: ./app/dev-tools
           target: /app/dev-tools
     environment:
-      - ARMASEC_DOMAIN=keycloak.local:8080/realms/master
+      - ARMASEC_DOMAIN=keycloak:8080/realms/master
       - ARMASEC_AUDIENCE=https://shrump.dusktreader.dev
       - ARMASEC_DEBUG=false
       - ARMASEC_USE_HTTPS=false
@@ -25,7 +27,7 @@ services:
       retries: 10
       timeout: 5s
     depends_on:
-      keycloak.local:
+      keycloak:
         condition: service_healthy
       nats1:
         condition: service_healthy
@@ -33,6 +35,8 @@ services:
         condition: service_healthy
       nats3:
         condition: service_healthy
+    networks:
+      - internal-net
 
   pin-reader-api:
     build:
@@ -47,9 +51,9 @@ services:
           path: ./app/dev-tools
           target: /app/dev-tools
     environment:
-      - ARMASEC_DOMAIN=keycloak.local:8080/realms/master
+      - ARMASEC_DOMAIN=keycloak:8080/realms/master
       - ARMASEC_AUDIENCE=https://shrump.dusktreader.dev
-      - ARMASEC_DEBUG=false
+      - ARMASEC_DEBUG=true
       - ARMASEC_USE_HTTPS=false
       - DB_URL=mongodb://admin:admin@reader-db
       - DB_NAME=pins
@@ -62,7 +66,7 @@ services:
       retries: 10
       timeout: 5s
     depends_on:
-      keycloak.local:
+      keycloak:
         condition: service_healthy
       reader-db:
         condition: service_healthy
@@ -72,8 +76,11 @@ services:
         condition: service_healthy
       nats3:
         condition: service_healthy
+    networks:
+      - internal-net
+      - wicket-net
 
-  keycloak.local:
+  keycloak:
     image: keycloak/keycloak:26.0
     restart: always
     volumes:
@@ -87,14 +94,14 @@ services:
       - KC_DB_URL=jdbc:postgresql://keycloak-db:5432/keycloak
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=keycloak
-      - KC_HOSTNAME=keycloak.local
+      - KC_HOSTNAME=http://raven/shrump/keycloak
       - KC_HOSTNAME_STRICT=false
       - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_PROXY_HEADERS=xforwarded
     command:
       - "start-dev"
-      # - "--import-realm"
-    ports:
-      - 8080:8080
+      - "--import-realm"
+      #- "--log-level=DEBUG"
     healthcheck:
       # Since Keycloak removed curl from its image, this command should work. Stolen from: https://gist.github.com/sarath-soman/5d9aec06953bbd0990c648605d4dba07?permalink_comment_id=5225953#gistcomment-5225953
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost:9000\r\nConnection: close\r\n\r\n' >&3;cat <&3 | grep -q '\"status\": \"UP\"' && exit 0 || exit 1"]
@@ -104,6 +111,17 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=wicket-net"
+      - "traefik.http.middlewares.shrump-keycloak.stripprefix.prefixes=/shrump/keycloak"
+      - "traefik.http.routers.shrump-keycloak.middlewares=shrump-keycloak"
+      - "traefik.http.routers.shrump-keycloak.rule=Host(`raven`) && PathPrefix(`/shrump/keycloak`)"
+      - "traefik.http.routers.shrump-keycloak.entrypoints=web"
+      - "traefik.http.services.shrump-keycloak.loadbalancer.server.port=8080"
+    networks:
+      - wicket-net
+      - internal-net
 
   keycloak-db:
     image: postgres:16.4
@@ -118,6 +136,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal-net
 
   reader-db:
     image: mongodb/mongodb-community-server:8.0.3-ubi8
@@ -134,6 +154,8 @@ services:
       interval: 5s
       retries: 10
       timeout: 5s
+    networks:
+      - internal-net
 
   nats1:
     image: docker.io/nats:2.10-alpine
@@ -155,6 +177,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - internal-net
 
   nats2:
     image: docker.io/nats:2.10-alpine
@@ -176,6 +200,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - internal-net
 
   nats3:
     image: docker.io/nats:2.10-alpine
@@ -197,6 +223,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - internal-net
 
 volumes:
   nats1:
@@ -205,3 +233,8 @@ volumes:
   kc-realm-files:
   kc-db-data:
   mongodb-data:
+
+networks:
+  wicket-net:
+    external: true
+  internal-net:
